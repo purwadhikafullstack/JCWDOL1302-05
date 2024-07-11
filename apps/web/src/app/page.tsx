@@ -1,95 +1,63 @@
-import Image from 'next/image'
-import styles from './page.module.css'
+'use client';
+import ClouserDestination from '@/components/layout/home/ClouserDestination';
+import DateRangePicker from '@/components/layout/home/DateRangePicker';
+import GuestBox from '@/components/layout/home/GuestBox';
+import Hero from '@/components/layout/home/Hero';
+import LocationBox from '@/components/layout/home/LocationBox';
+import PromoSection from '@/components/layout/home/PromoSection';
+import PropertySection from '@/components/layout/home/PropertySection';
+import SearchButton from '@/components/layout/home/SearchButton';
+import UpdateEmail from '@/components/layout/home/UpdateEmail';
+import { Box, HStack } from '@chakra-ui/react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 export default function Home() {
+  const [guest, setGuest] = useState(1);
+  const [city, setCity] = useState();
+  const [startDate, setStartDate] = useState<Date>();
+  const [endDate, setEndDate] = useState<Date>();
+  const router = useRouter();
+
+  const handleClick = () => {
+    router.push(
+      `/list-property?city=${city ? `${city}` : ''}&startDate=${startDate ? `${startDate}` : ''}&endDate=${endDate ? `${endDate}` : ''}`,
+    );
+  };
+
   return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>src/app/page.tsx</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <Box>
+      <Box className="mx-10">
+        <Hero />
+        <HStack flexWrap={'wrap'} mt={10}>
+          <LocationBox
+            setLocation={setCity}
+            location={city ? city : 'Choose Location'}
+          />
+          <GuestBox set={setGuest} guestCount={guest} />
+          <HStack
+            gap={{ base: 2, sm: 20 }}
+            flexWrap={'wrap'}
+            py={{ sm: '0.8rem', base: '4px' }}
+            px={{ sm: '2rem', base: '4px' }}
+            className="border-2 border-solid border-gray text-start flex-2"
+            justifyContent={'space-around'}
+            w={{ base: '100%', sm: 'auto' }}
           >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
+            <DateRangePicker
+              setValue={setStartDate}
+              label="from"
+              value={null}
             />
-          </a>
-        </div>
-      </div>
-
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore starter templates for Next.js.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  )
+            <DateRangePicker setValue={setEndDate} label="until" value={null} />
+          </HStack>
+          <SearchButton onClick={handleClick} />
+        </HStack>
+        <ClouserDestination />
+        <PromoSection />
+        <PropertySection />
+      </Box>
+      <UpdateEmail />
+    </Box>
+  );
 }
