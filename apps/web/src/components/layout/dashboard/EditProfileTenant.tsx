@@ -16,9 +16,11 @@ import Cookies from 'js-cookie';
 import * as Yup from 'yup';
 import { Form, Formik, Field, ErrorMessage } from 'formik';
 import { updateDataProfile } from '@/api/profile';
+import ChangeEmailTenantModal from './changeEmailTenant';
 
 interface EditProfileProps {
   onOpen: () => void;
+  onOpenEmail: () => void;
 }
 
 const validationSchema = Yup.object({
@@ -33,6 +35,7 @@ export default function EditProfileTenant({ onOpen }: EditProfileProps) {
   const [user, setUser] = useState<any | null>(null);
   const [userId, setUserId] = useState<any | null>(null);
   const toast = useToast();
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
 
   useEffect(() => {
     const storedUser = Cookies.get('user');
@@ -80,7 +83,7 @@ export default function EditProfileTenant({ onOpen }: EditProfileProps) {
     setIsEdit(false);
   };
 
-  const isEmailLogin = Cookies.get("login method") !== 'google';
+  const isEmailLogin = Cookies.get('login method') !== 'google';
 
   return (
     <div>
@@ -146,15 +149,28 @@ export default function EditProfileTenant({ onOpen }: EditProfileProps) {
       )}
       <HStack gap={8}>
         {!isEdit && (
-          <HStack gap={8} mt={4}>
+          <HStack flexWrap={'wrap'} justifyContent={'center'} gap={8} mt={4}>
             {isEmailLogin && (
               <Button w={200} colorScheme="gray" onClick={onOpen}>
                 Change Password
               </Button>
             )}
+            {isEmailLogin && (
+              <Button
+                w={200}
+                colorScheme="gray"
+                onClick={() => setIsEmailModalOpen(true)}
+              >
+                Change Email
+              </Button>
+            )}
           </HStack>
         )}
       </HStack>
+      <ChangeEmailTenantModal
+        isOpen={isEmailModalOpen}
+        onClose={() => setIsEmailModalOpen(false)}
+      />
     </div>
   );
 }

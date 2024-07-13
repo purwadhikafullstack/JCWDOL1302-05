@@ -17,6 +17,7 @@ import axios from 'axios';
 import Link from 'next/link';
 import Cookies from 'js-cookie';
 import { User } from '@/types';
+import { apiUrl } from '@/api';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -25,17 +26,25 @@ interface LoginModalProps {
   setUser: (user: User | null) => void;
 }
 
-const LoginTenantModal: React.FC<LoginModalProps> = ({ isOpen, onClose, setLoggedIn, setUser }) => {
+const LoginTenantModal: React.FC<LoginModalProps> = ({
+  isOpen,
+  onClose,
+  setLoggedIn,
+  setUser,
+}) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
   const handleLogin = async () => {
     try {
-      const response = await axios.post('http://localhost:6570/api/auth/tenant-login', {
-        email,
-        password,
-      });
+      const response = await axios.post(
+        `${apiUrl}/auth/tenant-login`,
+        {
+          email,
+          password,
+        },
+      );
 
       if (response.data) {
         const userData = response.data.data;
@@ -44,9 +53,8 @@ const LoginTenantModal: React.FC<LoginModalProps> = ({ isOpen, onClose, setLogge
         Cookies.set('user', JSON.stringify(userData), { expires: 1 });
         Cookies.set('token', userToken, { expires: 1 });
         Cookies.set('role', userRole, { expires: 1 });
-        console.log('Login successful', response.data);
         setLoggedIn(true);
-        setUser(userData)
+        setUser(userData);
         setError('');
         onClose();
       } else {
@@ -58,7 +66,7 @@ const LoginTenantModal: React.FC<LoginModalProps> = ({ isOpen, onClose, setLogge
   };
 
   const handleGoogleLogin = async () => {
-    window.location.href = 'http://localhost:6570/api/auth/google-tenant';
+    window.location.href = `${apiUrl}/auth/google-tenant`;
   };
 
   const handleCloseModal = () => {
@@ -97,7 +105,12 @@ const LoginTenantModal: React.FC<LoginModalProps> = ({ isOpen, onClose, setLogge
             Log In
           </Button>
           <Link href="/register-tenant" passHref>
-            <Button variant="link" colorScheme="blue" ml={3} onClick={handleCloseModal}>
+            <Button
+              variant="link"
+              colorScheme="blue"
+              ml={3}
+              onClick={handleCloseModal}
+            >
               Register
             </Button>
           </Link>
@@ -112,7 +125,7 @@ const LoginTenantModal: React.FC<LoginModalProps> = ({ isOpen, onClose, setLogge
             colorScheme="blue"
             onClick={handleGoogleLogin}
           >
-            Google 
+            Google
           </Button>
         </ModalFooter>
       </ModalContent>

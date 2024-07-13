@@ -19,6 +19,7 @@ import { updateDataProfile } from '@/api/profile';
 
 interface EditProfileProps {
   onOpen: () => void;
+  onOpenEmail: () => void;
 }
 
 const validationSchema = Yup.object({
@@ -28,7 +29,7 @@ const validationSchema = Yup.object({
   brithday: Yup.date().required('Required'),
 });
 
-export default function EditProfile({ onOpen }: EditProfileProps) {
+export default function EditProfile({ onOpen, onOpenEmail }: EditProfileProps) {
   const [isEdit, setIsEdit] = useState(false);
   const [user, setUser] = useState<any | null>(null);
   const [userId, setUserId] = useState<any | null>(null);
@@ -40,10 +41,8 @@ export default function EditProfile({ onOpen }: EditProfileProps) {
     if (storedUser) {
       const parsedUser = JSON.parse(storedUser);
       setUser(parsedUser);
-      //console.log(parsedUser.id);
       setUserId(storedUserId);
     }
-    //console.log(storedUserId);
   }, []);
 
   const initialValues = {
@@ -54,7 +53,6 @@ export default function EditProfile({ onOpen }: EditProfileProps) {
   };
 
   const handleSave = async (values: typeof initialValues) => {
-    //console.log(user, userId);
     try {
       const { username, gender, email, brithday } = values;
       const response = await updateDataProfile(
@@ -83,7 +81,7 @@ export default function EditProfile({ onOpen }: EditProfileProps) {
     setIsEdit(false);
   };
 
-  const isEmailLogin = Cookies.get("login method") !== 'google';
+  const isEmailLogin = Cookies.get('login method') !== 'google';
 
   return (
     <div>
@@ -149,13 +147,18 @@ export default function EditProfile({ onOpen }: EditProfileProps) {
       )}
       <HStack gap={8}>
         {!isEdit && (
-          <HStack gap={8} mt={4}>
+          <HStack flexWrap={'wrap'} justifyContent={'center'} gap={8} mt={4}>
             <Button w={200} colorScheme="gray" onClick={() => setIsEdit(true)}>
               Edit Profile
             </Button>
             {isEmailLogin && (
               <Button w={200} colorScheme="gray" onClick={onOpen}>
                 Change Password
+              </Button>
+            )}
+            {isEmailLogin && (
+              <Button w={200} colorScheme="gray" onClick={onOpenEmail}>
+                Change Email
               </Button>
             )}
           </HStack>

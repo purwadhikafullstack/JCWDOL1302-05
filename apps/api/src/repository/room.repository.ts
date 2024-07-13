@@ -1,17 +1,37 @@
 import { PrismaClient } from '@prisma/client';
+import { calculateFinalPrice, buildWhereClause } from '../utils/room.utils';
 
 const prisma = new PrismaClient();
 
-export const repoGetRoom = async (id: number) => {
-  return await prisma.room.findUnique({
-    where: {
-      id: id,
-    },
-    include: {
-      special_price: true,
-      room_availability: true,
-    },
+type RoomParams = {
+  id: number;
+  startDate?: string;
+  endDate?: string;
+};
+
+export const repoGetRoom = async ({ id, startDate, endDate }: RoomParams) => {
+  const room = await prisma.room.findUnique({
+    where: { id },
+    include: { special_price: true, room_availability: true },
   });
+
+  if (!room) {
+    throw new Error('Room not found');
+  }
+
+  const finalPrice = await calculateFinalPrice(room, startDate, endDate);
+
+  return { ...room, finalPrice };
+};
+
+type RoomByPropertyParams = {
+  property_id: string;
+  search?: string;
+  page?: string;
+  sortBy?: 'name' | 'price';
+  sortDirection?: 'asc' | 'desc';
+  startDate?: string;
+  endDate?: string;
 };
 
 export const repoGetRoomByProperty = async ({
@@ -22,126 +42,52 @@ export const repoGetRoomByProperty = async ({
   sortDirection = 'asc',
   startDate,
   endDate,
-}: {
-  property_id: string;
-  search?: string;
-  page: string;
-  sortBy?: 'name' | 'price';
-  sortDirection?: 'asc' | 'desc';
-  startDate?: string;
-  endDate?: string;
-}) => {
+}: RoomByPropertyParams) => {
   const pageN = page ? parseInt(page) * 4 - 4 : 0;
 
-  // Parse the startDate and endDate to Date objects
-  const start = startDate ? new Date(startDate) : undefined;
-  const end = endDate ? new Date(endDate) : undefined;
+  const whereClause = await buildWhereClause(
+    property_id,
+    search,
+    startDate,
+    endDate,
+  );
 
-  // Build the whereClause
-  const whereClause: any = {
-    property_id: parseInt(property_id),
-    ...(search ? { OR: [{ name: { contains: search } }] } : {}),
-    ...(start &&
-      end && {
-        AND: [
-          {
-            OR: [
-              {
-                room_availability: {
-                  none: {
-                    AND: [
-                      { start_date: { lte: end } },
-                      { end_date: { gte: start } },
-                    ],
-                  },
-                },
-              },
-              {
-                room_availability: {},
-              },
-            ],
-          },
-          {
-            OR: [
-              {
-                transaction: {
-                  none: {
-                    AND: [
-                      { check_out: { gte: start } },
-                      { check_in: { lte: end } },
-                    ],
-                  },
-                },
-              },
-              {
-                transaction: {},
-              },
-            ],
-          },
-        ],
-      }),
-  };
+  const countResult = await prisma.room.count({ where: whereClause });
 
-  // Count the total number of matching rooms
-  const countResult = await prisma.room.count({
-    where: whereClause,
-  });
-
-  // Find the matching rooms
   const allRooms = await prisma.room.findMany({
     skip: pageN,
     take: 4,
     where: whereClause,
-    include: {
-      special_price: true,
-    },
-    orderBy: {
-      [sortBy]: sortDirection,
-    },
+    include: { special_price: true },
+    orderBy: { [sortBy]: sortDirection },
   });
 
-  // Calculate the final price based on special price and weekend price
-  const roomsWithPrice = allRooms.map((room) => {
-    let finalPrice = room.price;
+  const roomsWithPrice = await Promise.all(
+    allRooms.map(async (room) => {
+      const finalPrice = await calculateFinalPrice(room, startDate, endDate);
+      return { ...room, finalPrice };
+    }),
+  );
 
-    // Get today's date
-    const today = new Date();
-
-    // Check for special price
-    const specialPrice = room.special_price.find((sp) => {
-      const spStart = new Date(sp.start_date);
-      const spEnd = new Date(sp.end_date);
-      return today >= spStart && today <= spEnd;
-    });
-
-    if (specialPrice) {
-      finalPrice = specialPrice.special_price;
-    } else {
-      // Check for weekend price (0 for Sunday, 6 for Saturday)
-      if (today.getDay() === 0 || today.getDay() === 6) {
-        finalPrice = room.weekend_price;
-      }
-      // Else use normal price
-    }
-
-    return { ...room, finalPrice };
-  });
-
-  return {
-    count: countResult,
-    data: roomsWithPrice,
-  };
+  return { count: countResult, data: roomsWithPrice };
 };
 
 export const repoGetRoomSpecialPrice = async (id_room: number) => {
   return prisma.room.findUnique({
-    where: {
-      id: id_room,
-    },
-    include: {
-      special_price: true,
-    },
+    where: { id: id_room },
+    include: { special_price: true },
   });
+};
+
+type AddRoomParams = {
+  name: string;
+  price: number;
+  weekend_price: number;
+  capacity_person: number;
+  capacity_room: number;
+  room_size: string;
+  property_id: number;
+  image: string;
 };
 
 export const repoAddRoom = async ({
@@ -153,16 +99,7 @@ export const repoAddRoom = async ({
   room_size,
   property_id,
   image,
-}: {
-  name: string;
-  price: number;
-  weekend_price: number;
-  capacity_person: number;
-  capacity_room: number;
-  room_size: string;
-  property_id: number;
-  image: string;
-}) => {
+}: AddRoomParams) => {
   return await prisma.room.create({
     data: {
       name,
@@ -177,6 +114,17 @@ export const repoAddRoom = async ({
   });
 };
 
+type UpdateRoomParams = {
+  name: string;
+  price: number;
+  weekend_price: number;
+  capacity_person: number;
+  capacity_room: number;
+  room_size: string;
+  id: number;
+  image: string;
+};
+
 export const repoUpdateRoom = async ({
   name,
   price,
@@ -186,16 +134,7 @@ export const repoUpdateRoom = async ({
   room_size,
   id,
   image,
-}: {
-  name: string;
-  price: number;
-  weekend_price: number;
-  capacity_person: number;
-  capacity_room: number;
-  room_size: string;
-  id: number;
-  image: string;
-}) => {
+}: UpdateRoomParams) => {
   return await prisma.room.update({
     where: { id },
     data: {
@@ -211,13 +150,9 @@ export const repoUpdateRoom = async ({
 };
 
 export const repoDeleteRoom = async (id: number) => {
-  return await prisma.room.delete({
-    where: { id },
-  });
+  return await prisma.room.delete({ where: { id } });
 };
 
 export const repoCheckRoom = async (id: number) => {
-  return await prisma.room.findUnique({
-    where: { id },
-  });
+  return await prisma.room.findUnique({ where: { id } });
 };

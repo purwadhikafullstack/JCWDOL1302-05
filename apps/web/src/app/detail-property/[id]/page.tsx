@@ -19,12 +19,15 @@ import {
   useBreakpointValue,
   Hide,
   Show,
+  Text,
+  VStack,
 } from '@chakra-ui/react';
 import {
   MagnifyingGlass,
   SortAscending,
   SortDescending,
   Plus,
+  MapPin,
 } from '@phosphor-icons/react';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
@@ -35,6 +38,7 @@ import useGetReviews from '@/hooks/list-property/getReviewProperty';
 import CommentSection from '@/components/layout/CommentSection';
 import { ArrowLeft } from '@phosphor-icons/react/dist/ssr';
 import Link from 'next/link';
+import { imageUrl } from '@/api';
 
 export default function Page() {
   const [page, setPage] = useState<number>(1);
@@ -78,11 +82,7 @@ export default function Page() {
     }
   }, [propertyId, page, search, category, sortBy, sortDirection]);
 
-  useEffect(() => {
-    console.log(rooms);
-  }, [rooms]);
-
-  const MyMap = useMemo(
+  const Map = useMemo(
     () =>
       dynamic(() => import('@/components/layout/property-detail/Map'), {
         loading: () => <p>A map is loading</p>,
@@ -91,26 +91,37 @@ export default function Page() {
     [],
   );
 
-  const position = [51.505, -0.09];
-  const zoom = 13;
   const inputWidth = useBreakpointValue({ base: '100%', md: '300px' });
   const isMobile = useBreakpointValue({ base: true, md: false });
 
   return (
     <Box className="px-4 md:px-16">
-      <Link href={'/dashboard'}>
-        <HStack my={10}>
-          <ArrowLeft size={32} />
-          <Heading ml={8} size={'lg'}>
-            {property ? property.name : 'Property Details'}
-          </Heading>
+      <VStack alignItems={'start'}>
+        <Link href={'/dashboard'}>
+          <HStack my={10}>
+            <ArrowLeft size={32} />
+            <Heading ml={8} size={'lg'}>
+              {property ? property.name : 'Property Details'}
+            </Heading>
+          </HStack>
+        </Link>
+        <HStack alignItems={'start'}>
+          <MapPin size={30} />
+          <VStack alignItems={'start'}>
+            <Text fontSize={'large'}>
+              {property ? property.city_name : 'City Name'}
+            </Text>
+            <Text fontSize={'large'}>
+              {property ? property.address : 'City Name'}
+            </Text>
+          </VStack>
         </HStack>
-      </Link>
+      </VStack>
 
       <Image
         src={
           property?.image
-            ? `http://localhost:6570/images/${property?.image}`
+            ? `${imageUrl}/${property?.image}`
             : `https://images.unsplash.com/photo-1555041469-a586c61ea9bc?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1770&q=80`
         }
         alt="Green double couch with wooden legs"
@@ -119,8 +130,6 @@ export default function Page() {
         my={20}
         borderRadius="lg"
       />
-
-      <MyMap position={position} zoom={zoom} />
 
       <Stack
         my={10}
@@ -243,6 +252,15 @@ export default function Page() {
       </Stack>
 
       <SimplePagination page={page} setPage={setPage} maxPage={1} />
+      <div className="bg-white-700 mx-auto my-5 w-full h-[480px]">
+        <Map
+          propertyName={property ? property.name : ''}
+          posix={[
+            property ? parseInt(property.latitude) : 4.79029,
+            property ? parseInt(property.latitude) : -75.69003,
+          ]}
+        />
+      </div>
       <CommentSection reviews={reviews} />
       <ModalAddRoom
         id={params.id}

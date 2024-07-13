@@ -2,6 +2,7 @@ import { Strategy as GoogleStrategy, Profile } from 'passport-google-oauth20';
 import { PrismaClient, User as PrismaUser } from '@prisma/client';
 import { sign } from 'jsonwebtoken';
 
+const BACKEND_URL = process.env.BACKEND_URL;
 const prisma = new PrismaClient();
 
 export interface User extends PrismaUser {}
@@ -24,7 +25,6 @@ function generateRandomPassword(length: number = 12): string {
 }
 
 //user
-
 export const serviceRegisterUserGoogle = async (
   accessToken: string,
   refreshToken: string,
@@ -86,7 +86,7 @@ export const configureGoogleStrategyUser = () => {
     {
       clientID: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      callbackURL: 'http://localhost:6570/api/auth/google-user/callback',
+      callbackURL: `${BACKEND_URL}/auth/google-user/callback`,
     },
     async (
       accessToken: string,
@@ -109,7 +109,6 @@ export const configureGoogleStrategyUser = () => {
 };
 
 //Tenant
-
 export const serviceRegisterTenantGoogle = async (
   accessToken: string,
   refreshToken: string,
@@ -171,7 +170,7 @@ export const configureGoogleStrategyTenant = () => {
     {
       clientID: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      callbackURL: 'http://localhost:6570/api/auth/google-tenant/callback',
+      callbackURL: `${BACKEND_URL}/auth/google-tenant/callback`,
     },
     async (
       accessToken: string,
