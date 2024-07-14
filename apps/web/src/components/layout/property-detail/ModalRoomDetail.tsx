@@ -15,12 +15,12 @@ import React, { useEffect, useState } from 'react';
 import { RoomImage } from './RoomImage';
 import { RoomInfo } from './RoomInfo';
 import { SpecialPriceTable } from './TabelSpecialPrice';
-import { getDetailRoom } from '@/api/rooms';
 import { AvailableRoomTable } from './TabelAvailableRoom';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import { User } from '@/types';
-import dayjs from 'dayjs';
+import useDetailRoom from '@/hooks/room/useDetailRoom';
+import { apiUrl } from '@/api';
 
 const getUserFromCookie = (): User | null => {
   const userCookie = Cookies.get('user');
@@ -38,85 +38,63 @@ const getUserFromCookie = (): User | null => {
 const user = getUserFromCookie();
 const userId = user?.id;
 
-export default function ModalRoomDetail({ onClose, isOpen, roomId, dashboard, title, startDate, endDate }: any) {
+export default function ModalRoomDetail({
+  onClose,
+  isOpen,
+  roomId,
+  dashboard,
+  title,
+  startDate: initialStartDate,
+  endDate: initialEndDate,
+  price,
+}: any) {
   const [addSpecialPrice, setAddSpecialPrice] = useState(true);
   const [addAvailableRoom, setaddAvailableRoom] = useState(true);
   const toggleSpecialPrice = () => setAddSpecialPrice(!addSpecialPrice);
   const toggleAvailableRoom = () => setaddAvailableRoom(!addAvailableRoom);
-  const [roomDetail, setRoomDetail] = useState<any>();
-  const [specialPrice, setSpecialPrice] = useState<any>();
-  const [availableRoom, setAvailableRoom] = useState<any>();
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
   const [checkIn, setCheckIn] = useState<string>('');
   const [checkOut, setCheckOut] = useState<string>('');
-  const [totalPrice, setTotalPrice] = useState<number>(0);
+  const { room, loading, error, setStartDate, setEndDate, fetchRoom } =
+    useDetailRoom();
 
-  const getDetailsRoom = async () => {
-    try {
-      const response = await getDetailRoom(parseInt(roomId));
-      setRoomDetail(response.data.data);
-      setSpecialPrice(response.data.data.special_price);
-      setAvailableRoom(response.data.data.room_availability);
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
-  const calculateTotalPrice = (pricePerDay: number, startDate: string, endDate: string): number => {
-    const start = dayjs(startDate);
-    const end = dayjs(endDate);
-    let totalPrice = 0;
-
-    for (let date = start; date.isBefore(end) || date.isSame(end, 'day'); date = date.add(1, 'day')) {
-      let dailyPrice = pricePerDay;
-      const specialPriceEntry = specialPrice?.find((special: any) =>
-        dayjs(special.date).isSame(date, 'day')
-      );
-      if (specialPriceEntry) {
-        dailyPrice = specialPriceEntry.price;
-      }
-      totalPrice += dailyPrice;
-    }
-    return totalPrice;
-  };
-
-  const handleBooking = async () => {
+  const preBooking = async () => {
     if (!userId) {
       setIsAlertOpen(true);
       return;
     }
-    const pricePerDay = roomDetail?.price;
-    const calculatedTotalPrice = calculateTotalPrice(pricePerDay, checkIn, checkOut);
-    setTotalPrice(calculatedTotalPrice);
     setIsConfirmationOpen(true);
   };
 
-  const confirmBooking = async () => {
+  const handleBooking = async () => {
     try {
-      const pricePerDay = roomDetail?.price;
-      const totalPrice = calculateTotalPrice(pricePerDay, checkIn, checkOut);
-      const response = await axios.post('http://localhost:6570/api/transaction/booking', {
-        roomId,
-        userId,
-        price: totalPrice,
-        startDate: checkIn,
-        endDate: checkOut,
-      });
-      console.log("Booking response:", response);
+      const response = await axios.post(
+        `${apiUrl}/transaction/booking`,
+        {
+          roomId,
+          userId,
+          price,
+          startDate: checkIn,
+          endDate: checkOut,
+        },
+      );
       window.location.href = `/transaction`;
     } catch (error: any) {
-      console.log(error);
     } finally {
       setIsConfirmationOpen(false);
     }
   };
 
   useEffect(() => {
-    getDetailsRoom();
-    setCheckIn(startDate);
-    setCheckOut(endDate);
-  }, [isOpen]);
+    if (isOpen) {
+      setStartDate(new Date(initialStartDate));
+      setEndDate(new Date(initialEndDate));
+      fetchRoom(parseInt(roomId));
+      setCheckIn(initialStartDate);
+      setCheckOut(initialEndDate);
+    }
+  }, [isOpen, initialStartDate, initialEndDate, roomId]);
 
   return (
     <>
@@ -128,9 +106,9 @@ export default function ModalRoomDetail({ onClose, isOpen, roomId, dashboard, ti
           <ModalBody>
             <RoomImage />
             <RoomInfo
-              user={roomDetail?.capacity_person}
-              bed={roomDetail?.capacity_room}
-              size={roomDetail?.room_size}
+              user={room?.capacity_person}
+              bed={room?.capacity_room}
+              size={room?.room_size}
             />
             {dashboard ? (
               <>
@@ -138,20 +116,20 @@ export default function ModalRoomDetail({ onClose, isOpen, roomId, dashboard, ti
                   room_id={roomId}
                   addSpecialPrice={addSpecialPrice}
                   toggleSpecialPrice={toggleSpecialPrice}
-                  dataSpecialPrice={specialPrice}
+                  dataSpecialPrice={room?.special_price}
                 />
                 <AvailableRoomTable
                   room_id={roomId}
                   addAvailableRoom={addAvailableRoom}
                   toggleAvailableRoom={toggleAvailableRoom}
-                  dataAvailableRoom={availableRoom}
+                  dataAvailableRoom={room?.room_availability}
                 />
               </>
             ) : null}
           </ModalBody>
           <ModalFooter justifyContent={'space-between'}>
-            <Heading size={'md'}>Rp. {roomDetail?.price} per day</Heading>
-            <Button px={10} onClick={handleBooking} colorScheme="blue">
+            <Heading size={'md'}>Rp. {price}</Heading>
+            <Button px={10} onClick={preBooking} colorScheme="blue">
               Booking
             </Button>
           </ModalFooter>
@@ -177,20 +155,27 @@ export default function ModalRoomDetail({ onClose, isOpen, roomId, dashboard, ti
         </ModalContent>
       </Modal>
 
-      <Modal isOpen={isConfirmationOpen} onClose={() => setIsConfirmationOpen(false)}>
+      <Modal
+        isOpen={isConfirmationOpen}
+        onClose={() => setIsConfirmationOpen(false)}
+      >
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>Confirm Booking</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            Are you sure you want to book this property?
-            Total Price to Pay: Rp. {totalPrice}
+            Are you sure you want to book this property? Total Price to Pay: Rp.{' '}
+            {room?.finalPrice}
           </ModalBody>
           <ModalFooter>
-            <Button onClick={() => setIsConfirmationOpen(false)} colorScheme="red" mr={3}>
+            <Button
+              onClick={() => setIsConfirmationOpen(false)}
+              colorScheme="red"
+              mr={3}
+            >
               No
             </Button>
-            <Button onClick={confirmBooking} colorScheme="green">
+            <Button onClick={handleBooking} colorScheme="green">
               Yes
             </Button>
           </ModalFooter>

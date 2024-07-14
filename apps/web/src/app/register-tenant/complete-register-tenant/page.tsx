@@ -1,8 +1,19 @@
-'use client'
+'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Button, VStack, Text, Heading, Input, FormControl, FormLabel, Container, Box } from '@chakra-ui/react';
+import {
+  Button,
+  VStack,
+  Text,
+  Heading,
+  Input,
+  FormControl,
+  FormLabel,
+  Container,
+  Box,
+} from '@chakra-ui/react';
 import axios from 'axios';
+import { apiUrl } from '@/api';
 
 export default function CompleteRegister() {
   const [email, setEmail] = useState('');
@@ -15,7 +26,6 @@ export default function CompleteRegister() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     setEmail(params.get('email') || '');
-    //console.log(email)
   }, []);
 
   const handleRegister = async () => {
@@ -29,16 +39,22 @@ export default function CompleteRegister() {
         email,
         password,
       };
-      const response = await axios.post('http://localhost:6570/api/auth/register-tenant-complete', payload);
+      const response = await axios.post(
+        `${apiUrl}/auth/register-tenant-complete`,
+        payload,
+      );
       if (response.data.success) {
         setSuccess(true);
         setError('');
-        window.location.href = '/'; // Redirect to the dashboard or home page
+        window.location.href = '/';
       } else {
         setError(response.data.message || 'Registration failed');
       }
     } catch (error: any) {
-      setError('Registration failed: ' + (error.response?.data?.message || error.message));
+      setError(
+        'Registration failed: ' +
+          (error.response?.data?.message || error.message),
+      );
     }
   };
 
@@ -49,7 +65,11 @@ export default function CompleteRegister() {
           <Heading mb={6} textAlign="center" color={'primary'}>
             Complete Registration
           </Heading>
-          {error && <Text color="red.500" mb={4}>{error}</Text>}
+          {error && (
+            <Text color="red.500" mb={4}>
+              {error}
+            </Text>
+          )}
           <FormControl id="username" mb={4}>
             <FormLabel>Username</FormLabel>
             <Input
@@ -83,7 +103,9 @@ export default function CompleteRegister() {
       )}
       {success && (
         <VStack>
-          <Text color="green.500" textAlign="center">Registration successful</Text>
+          <Text color="green.500" textAlign="center">
+            Registration successful
+          </Text>
         </VStack>
       )}
     </Container>

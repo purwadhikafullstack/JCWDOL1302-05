@@ -8,8 +8,6 @@ import {
   repoUploadPaymentProof,
 } from '../repository/transaction.repository';
 import path from 'path';
-import nodemailer from 'nodemailer';
-import { google } from 'googleapis';
 
 interface PaymentProofRequestBody {
   transactionId: string;
@@ -17,7 +15,6 @@ interface PaymentProofRequestBody {
 
 export const serviceAddTransaction = async (req: any) => {
   const { roomId, userId, price, startDate, endDate } = req.body;
-
   if (!roomId || !userId || !price) {
     return {
       status: 401,
@@ -25,7 +22,6 @@ export const serviceAddTransaction = async (req: any) => {
       message: 'invalid input',
     };
   }
-
   try {
     const data = await repoAddTransaction(
       roomId,
@@ -51,7 +47,6 @@ export const serviceAddTransaction = async (req: any) => {
 
 export const serviceGetSalesReport = async (req: any) => {
   const { sortBy, sortDirection, startDate, endDate } = req.query;
-
   try {
     const transactions = await repoGetSalesReport(
       sortBy || 'createdAt',
@@ -75,7 +70,6 @@ export const serviceGetSalesReport = async (req: any) => {
 
 export const serviceUpdateTransactionStatus = async (req: any) => {
   const { transactionId, status } = req.body;
-
   if (!transactionId || !status) {
     return {
       status: 401,
@@ -83,7 +77,6 @@ export const serviceUpdateTransactionStatus = async (req: any) => {
       message: 'Invalid input',
     };
   }
-
   try {
     const data = await repoUpdateTransactionStatus(transactionId, status);
     return {
@@ -103,7 +96,6 @@ export const serviceUpdateTransactionStatus = async (req: any) => {
 
 export const serviceTransactionApprove = async (req: any) => {
   const { transactionId, email, text } = req.body;
-
   if (!transactionId) {
     return {
       status: 401,
@@ -111,7 +103,6 @@ export const serviceTransactionApprove = async (req: any) => {
       message: 'Invalid input',
     };
   }
-
   try {
     const data = await repoUpdateTransactionStatus(transactionId, 'approved');
     await transporter.sendMail({
@@ -137,7 +128,6 @@ export const serviceTransactionApprove = async (req: any) => {
 
 export const serviceGetTransactionStatus = async (req: any) => {
   const { transactionId } = req.query;
-
   if (!transactionId) {
     return {
       status: 401,
@@ -145,7 +135,6 @@ export const serviceGetTransactionStatus = async (req: any) => {
       message: 'Invalid input',
     };
   }
-
   try {
     const data = await repoGetTransactionStatus(transactionId);
     return {
@@ -164,7 +153,6 @@ export const serviceGetTransactionStatus = async (req: any) => {
 
 export const serviceUploadPaymentProof = async (req: Request) => {
   const body = req.body;
-
   if (!body || typeof body !== 'object' || !('transactionId' in body)) {
     return {
       status: 400,
@@ -172,10 +160,8 @@ export const serviceUploadPaymentProof = async (req: Request) => {
       message: 'Transaction ID is required in the request body.',
     };
   }
-
   const { transactionId } = body as PaymentProofRequestBody;
   const file = (req as any).file;
-
   if (!file) {
     return {
       status: 400,
@@ -183,16 +169,13 @@ export const serviceUploadPaymentProof = async (req: Request) => {
       message: 'File is required in the request.',
     };
   }
-
   try {
-    const filePath = path.join('/images', file.filename);
+    const filePath = path.join(file.filename);
     const data = await repoUploadPaymentProof(transactionId, filePath);
-
     await repoUpdateTransactionStatus(
       transactionId,
       'waiting payment confirmation',
     );
-
     return {
       status: 200,
       success: true,
@@ -211,7 +194,6 @@ export const serviceUploadPaymentProof = async (req: Request) => {
 
 export const serviceGetPaymentProof = async (req: any) => {
   const transactionId = req.params.bookingId;
-
   if (!transactionId) {
     return {
       status: 401,
@@ -219,7 +201,6 @@ export const serviceGetPaymentProof = async (req: any) => {
       message: 'Invalid input',
     };
   }
-
   try {
     const data = await repoGetPaymentProof(transactionId);
     return {

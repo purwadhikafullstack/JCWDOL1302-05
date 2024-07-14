@@ -1,61 +1,45 @@
-import { useState, useEffect } from 'react';
-import { getDataPropertyByRoom } from '@/api/property';
-import { City } from '@phosphor-icons/react';
+import { useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState, AppDispatch } from '../../lib/store';
+import {
+  fetchProperties,
+  setPage,
+  setSearch,
+  setCity,
+  setStartDate,
+  setEndDate,
+} from '../../lib/fratures/propertySlice';
 
 const usePropertyAll = () => {
-  const [dataRoom, setDataRoom] = useState<any>([]);
-  const [page, setPage] = useState(1);
-  const [maxPage, setMaxPage] = useState(1);
-  const [search, setSearch] = useState('');
-  const [city, setCity] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [sortBy, setSortBy] = useState('');
-  const [sortDirection, setDirection] = useState('asc');
+  const dispatch = useDispatch<AppDispatch>();
+  const { dataProperty, page, maxPage, search, city, startDate, endDate } =
+    useSelector((state: RootState) => state.property);
 
-  const fetchData = async () => {
-    try {
-      const response = await getDataPropertyByRoom(
+  useEffect(() => {
+    dispatch(
+      fetchProperties({
         page,
         city,
         search,
-        sortBy,
-        sortDirection,
         startDate,
         endDate,
-      );
-      setMaxPage(Math.ceil(response.data.count / 4));
-      setDataRoom(response.data.data);
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, [page, sortDirection, sortBy, search, City]);
-
-  const handleDirections = () => {
-    setDirection((prev) => (prev == 'asc' ? 'desc' : 'asc'));
-  };
+      }),
+    );
+  }, [dispatch, page, search, city, startDate, endDate]);
 
   return {
-    dataRoom,
+    dataProperty,
     page,
-    setPage,
+    setPage: (value: number) => dispatch(setPage(value)),
     maxPage,
     search,
-    setSearch,
+    setSearch: (value: string) => dispatch(setSearch(value)),
     city,
-    setCity,
-    sortBy,
-    setSortBy,
+    setCity: (value: string) => dispatch(setCity(value)),
     startDate,
-    setStartDate,
+    setStartDate: (value: string) => dispatch(setStartDate(value)),
     endDate,
-    setEndDate,
-    sortDirection,
-    handleDirections,
+    setEndDate: (value: string) => dispatch(setEndDate(value)),
   };
 };
 

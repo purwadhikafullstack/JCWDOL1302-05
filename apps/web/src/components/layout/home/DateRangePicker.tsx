@@ -8,12 +8,9 @@ const DateRangePicker = ({
   value,
 }: {
   label: string;
-  setValue: (date: Date) => void;
+  setValue: any;
   value: string | null;
 }) => {
-  useEffect(() => {
-    console.log(value);
-  }, [value]);
   return (
     <>
       <Show above="sm">

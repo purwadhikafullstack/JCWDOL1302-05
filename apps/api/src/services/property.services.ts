@@ -11,6 +11,8 @@ import {
 export const serviceGetPropertyByRooms = async (req: any) => {
   const { city, search, page, sortBy, sortDirection, startDate, endDate } =
     req.query;
+  console.log(page);
+
   try {
     const data = await repoGetPropertyByRooms({
       city,
@@ -61,7 +63,7 @@ export const serviceGetPropertyByTenant = async (req: any) => {
       count: data.count,
     };
   } catch (error) {
-    //console.log(error);
+    console.log(error);
     return {
       status: 500,
       message: 'server error',

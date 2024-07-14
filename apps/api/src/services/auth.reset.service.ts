@@ -4,7 +4,10 @@ import nodemailer from 'nodemailer';
 import { google } from 'googleapis';
 import { verify } from 'jsonwebtoken';
 import { JwtPayload } from 'jsonwebtoken';
-import { repoFindTenant, repoFindUser, repoTenantChangePassword, repoUserChangePassword } from '../repository/auth.repository';
+import { repoFindTenant, repoFindUser, repoTenantChangePassword, repoUserChangePassword, repoUserChangeEmail, repoTenantChangeEmail } from '../repository/auth.repository';
+
+const FRONTEND_URL = process.env.FRONTEND_URL;
+const BACKEND_URL = process.env.BACKEND_URL;
 
 const hashPassword = async (password: string): Promise<string> => {
   const salt = await genSalt(10);
@@ -15,17 +18,19 @@ const createToken = (payload: object, secret: string, expiresIn: string): string
   return sign(payload, secret, { expiresIn });
 };
 
+const createVerificationToken = (email: string): string => {
+  return sign({ email }, 'verificationKey');
+};
+
 const createTransporter = async () => {
   const oauth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
     'https://developers.google.com/oauthplayground',
   );
-
   oauth2Client.setCredentials({
     refresh_token: process.env.REFRESH_TOKEN,
   });
-
   const accessToken = await new Promise<string>((resolve, reject) => {
     oauth2Client.getAccessToken((err: any, token: any) => {
       if (err) {
@@ -138,9 +143,9 @@ export const serviceSendResetPasswordEmail = async (email: string, role: string)
     const resetToken = createToken(
       { email: email, role },
       'verificationKey',
-      '1d',
+      '1h',
     );
-    const resetLink = `http://localhost:3000/reset-password/${resetToken}`;
+    const resetLink = `${FRONTEND_URL}/reset-password/${resetToken}`;
     await sendEmail({
       to: email,
       from: process.env.EMAIL,
@@ -190,4 +195,36 @@ export const serviceResetPassword = async (newPassword: string, role: string, em
       };
     }
   };
-  
+
+  export const serviceResetEmail = async (email: string, role: string, newEmail: string) => {
+    try {
+      let updatedEntity;
+      if (role === 'user') {
+        updatedEntity = await repoUserChangeEmail(email, newEmail);
+      } else if (role === 'tenant') {
+        updatedEntity = await repoTenantChangeEmail(email, newEmail);
+      } else {
+        throw new Error('Invalid role');
+      }
+      const verificationToken = createVerificationToken(newEmail);
+      const verificationLink = `${BACKEND_URL}/auth/verify-email-reset?token=${verificationToken}&role=${role}`;
+      await sendEmail({
+        to: newEmail,
+        from: process.env.EMAIL,
+        subject: 'Verify Your New Email',
+        text: `Please verify your new email by clicking the following link: ${verificationLink}`,
+      });
+      return {
+        status: 200,
+        success: true,
+        message: 'Email updated and verification email sent successfully',
+      };
+    } catch (error: any) {
+      return {
+        status: 400,
+        success: false,
+        message: 'Invalid or expired token',
+        error: error.message,
+      };
+    }
+  };

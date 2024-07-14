@@ -56,7 +56,6 @@ export default function DashboardPage() {
   const [role, setRole] = useState('');
   const [user, setUser] = useState<User | null>(null);
   const [loggedIn, setLoggedIn] = useState<boolean>(false);
-
   const {
     dataRoom,
     page,
@@ -78,7 +77,6 @@ export default function DashboardPage() {
   useEffect(() => {
     const storedUser = Cookies.get('user');
     const storedRole = Cookies.get('role');
-
     if (storedUser) {
       setUser(JSON.parse(storedUser));
       setLoggedIn(true);
@@ -93,10 +91,6 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    console.log(dataRoom);
-  }, [dataRoom]);
-
-  useEffect(() => {
     const verifyAndSet = async () => {
       try {
         const isValidToken: boolean = await verifyTokenClient();
@@ -109,7 +103,7 @@ export default function DashboardPage() {
     verifyAndSet();
   }, []);
 
-  if (verified == null) {
+  if (verified == null || role == null) {
     return (
       <Center mt={100} mb={200}>
         <Text>Loading...</Text>
@@ -117,7 +111,7 @@ export default function DashboardPage() {
     );
   }
 
-  if (!verified || role !== 'tenant') {
+  if (!loggedIn || !verified || role !== 'tenant') {
     return (
       <VStack mt={100} mb={200}>
         <Text>You are not authorized. Please log in to access this page.</Text>
@@ -200,10 +194,10 @@ export default function DashboardPage() {
             </HStack>
 
             <HStack
-              w={'100vw'}
+              w={{ base: 'auto', sm: '100vw' }}
               flexWrap={'wrap'}
               justifyContent={'start'}
-              gap={4}
+              gap={0}
               my={10}
             >
               {dataRoom.length === 0 ? (

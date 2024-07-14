@@ -18,8 +18,6 @@ const usePropertyData = () => {
     const storedUser = Cookies.get('user');
     const dataUser = JSON.parse(Cookies.get('user') as string);
 
-    console.log(dataUser.id);
-
     if (dataUser) {
       setTenantId(dataUser.id);
     }
@@ -41,9 +39,7 @@ const usePropertyData = () => {
         setMaxPage(Math.ceil(response.data.count / 4));
         setDataRoom(response.data.data);
       }
-    } catch (error) {
-      console.log(error);
-    }
+    } catch (error) {}
   };
 
   useEffect(() => {
