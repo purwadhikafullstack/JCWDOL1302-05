@@ -37,6 +37,7 @@ const getUserFromCookie = (): User | null => {
 
 const user = getUserFromCookie();
 const userId = user?.id;
+const role = Cookies.get('role');
 
 export default function ModalRoomDetail({
   onClose,
@@ -47,6 +48,7 @@ export default function ModalRoomDetail({
   startDate: initialStartDate,
   endDate: initialEndDate,
   price,
+  image,
 }: any) {
   const [addSpecialPrice, setAddSpecialPrice] = useState(true);
   const [addAvailableRoom, setaddAvailableRoom] = useState(true);
@@ -69,16 +71,13 @@ export default function ModalRoomDetail({
 
   const handleBooking = async () => {
     try {
-      const response = await axios.post(
-        `${apiUrl}/transaction/booking`,
-        {
-          roomId,
-          userId,
-          price,
-          startDate: checkIn,
-          endDate: checkOut,
-        },
-      );
+      const response = await axios.post(`${apiUrl}/transaction/booking`, {
+        roomId,
+        userId,
+        price,
+        startDate: checkIn,
+        endDate: checkOut,
+      });
       window.location.href = `/transaction`;
     } catch (error: any) {
     } finally {
@@ -96,6 +95,10 @@ export default function ModalRoomDetail({
     }
   }, [isOpen, initialStartDate, initialEndDate, roomId]);
 
+  function formatRupiah(number: number) {
+    return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  }
+
   return (
     <>
       <Modal onClose={onClose} size={'xl'} isOpen={isOpen}>
@@ -104,7 +107,7 @@ export default function ModalRoomDetail({
           <ModalHeader>{title}</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            <RoomImage />
+            <RoomImage image={image} />
             <RoomInfo
               user={room?.capacity_person}
               bed={room?.capacity_room}
@@ -128,10 +131,12 @@ export default function ModalRoomDetail({
             ) : null}
           </ModalBody>
           <ModalFooter justifyContent={'space-between'}>
-            <Heading size={'md'}>Rp. {price}</Heading>
-            <Button px={10} onClick={preBooking} colorScheme="blue">
-              Booking
-            </Button>
+            <Heading size={'md'}>Rp. {formatRupiah(price)}</Heading>
+            {role === 'user' && (
+              <Button px={10} onClick={preBooking} colorScheme="blue">
+                Booking
+              </Button>
+            )}
           </ModalFooter>
         </ModalContent>
       </Modal>
@@ -165,7 +170,7 @@ export default function ModalRoomDetail({
           <ModalCloseButton />
           <ModalBody>
             Are you sure you want to book this property? Total Price to Pay: Rp.{' '}
-            {room?.finalPrice}
+            {formatRupiah(price)}
           </ModalBody>
           <ModalFooter>
             <Button

@@ -52,6 +52,10 @@ export default function CustomCard({
   const formattedStartDate = formatDate(startDate);
   const formattedEndDate = formatDate(endDate);
 
+  function formatRupiah(number: number) {
+    return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  }
+
   return (
     <Card maxW="xs">
       <CardBody>
@@ -93,7 +97,7 @@ export default function CustomCard({
           </HStack>
           <Box>
             <Text fontSize={'md'} fontWeight={'bold'}>
-              Rp. {price}
+              Rp. {formatRupiah(price)}
             </Text>
           </Box>
         </HStack>

@@ -55,6 +55,10 @@ export default function CustomCardRoom({
   const formattedStartDate = formatDate(startDate);
   const formattedEndDate = formatDate(endDate);
 
+  function formatRupiah(number: number) {
+    return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  }
+
   return (
     <>
       <Card maxW="xs" className=" cursor-pointer" onClick={onOpenDetail} pb={4}>
@@ -84,7 +88,7 @@ export default function CustomCardRoom({
             </HStack>
             <Box>
               <Text fontSize={'md'} fontWeight={'bold'}>
-                Rp. {price}
+                Rp. {formatRupiah(price)}
               </Text>
             </Box>
           </HStack>
@@ -111,6 +115,7 @@ export default function CustomCardRoom({
         startDate={startDate}
         endDate={endDate}
         price={price}
+        image={image}
       />
       <ModalEditRoom
         isOpen={isOpen}
