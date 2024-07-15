@@ -42,6 +42,14 @@ export default function Page() {
     }
   }, [searchParams, setCity, setStartDate, setEndDate]);
 
+  useEffect(() => {
+    if (!cityParam || !startDateParam || !endDateParam) {
+      setCity('');
+      setStartDate('');
+      setEndDate('');
+    }
+  }, []);
+
   return (
     <Box className="mx-10">
       <HStack flexWrap={'wrap'} mt={10}>
